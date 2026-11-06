@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Poll Application</title>
+    <style>
+        :root {
+            --text-muted: #888;
+            --primary-color: #007bff;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+        }
+        body {
+            font-family: 'Khmer OS Battambang', sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            box-sizing: border-box;
+            padding-top: 10px;
+        }
+        .profile-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .profile-info h3 {
+            margin: 0 0 5px 0;
+            font-size: 18px;
+        }
+        .profile-info p {
+            margin: 0;
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        .profile-stats {
+            text-align: right;
+        }
+        .credit-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+        .logout-btn {
+            background-color: transparent;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.6);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .withdraw-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .withdraw-title {
+            font-weight: bold;
+            color: #333;
+            font-size: 14px;
+            border-bottom: 1px solid #edf2f7;
+            padding-bottom: 5px;
+        }
+        .withdraw-form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .form-row {
+            display: flex;
+            gap: 8px;
+        }
+        .withdraw-select, .withdraw-input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            outline: none;
+            box-sizing: border-box;
+        }
+        .withdraw-select { width: 40%; }
+        .withdraw-input { width: 60%; }
+        .amount-input-row {
+            display: flex;
+            gap: 8px;
+        }
+        .withdraw-btn {
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            flex-grow: 1;
+        }
+        .poll-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .poll-item h4 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            color: #333;
+            font-size: 15px;
+        }
+        .option-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            background-color: #fafafa;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .vote-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Profile Banner -->
+        <div class="profile-banner" id="profile-banner" style="display: none;">
+            <div class="profile-info">
+                <h3 id="user-username">ឈ្មោះអ្នកប្រើប្រាស់</h3>
+                <p id="user-rank">🌱 ថ្នាក់: កំពុងទាញ...</p>
+            </div>
+            <div class="profile-stats">
+                <div class="credit-badge"><span id="user-credits">0</span> Credit</div>
+                <div>
+                    <button class="logout-btn" onclick="logout()">ចាកចេញ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ประอับดกប្រាក់ (Withdraw UI) -->
+        <div class="withdraw-card" id="withdraw-card" style="display: none;">
+            <div class="withdraw-title">💰 ដកប្រាក់ និងព័ត៌មានធនាគារ</div>
+            <form class="withdraw-form" id="withdraw-form">
+                <div class="form-row">
+                    <select class="withdraw-select" id="withdraw-bank" required>
+                        <option value="" disabled selected>ជ្រើសរើសធនាគារ</option>
+                        <option value="ABA Bank">ABA Bank</option>
+                        <option value="ACLEDA Bank">ACLEDA</option>
+                        <option value="Wing Bank">Wing</option>
+                    </select>
+                    <input type="text" class="withdraw-input" id="withdraw-account" placeholder="លេខគណនីធនាគារ" required>
+                </div>
+                <div class="amount-input-row">
+                    <input type="number" class="withdraw-input" style="width: 50%;" id="withdraw-amount" placeholder="ចំនួន Credit" min="1" required>
+                    <button type="submit" class="withdraw-btn">ផ្ញើសំណើដក</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Poll Container -->
+        <div id="poll-container"></div>
+    </div>
+    <script>
+        const container = document.getElementById('poll-container');
+
+        async function checkCurrentUser() {
+            try {
+                const response = await fetch('/api/current-user');
+                const data = await response.json();
+
+                if (data.loggedIn) {
+                    document.getElementById('profile-banner').style.display = 'flex';
+                    document.getElementById('withdraw-card').style.display = 'flex';
+                    
+                    document.getElementById('user-username').textContent = data.user.username;
+                    document.getElementById('user-credits').textContent = data.user.credits;
+                    document.getElementById('user-rank').textContent = `ថ្នាក់: ${data.user.rank || '🌱 Newbie'}`;
+                } else {
+                    alert("សូមមេត្តាចូលប្រព័ន្ធ (Login) ជាមុនសិន!");
+                    window.location.href = '/login.html';
+                }
+            } catch (err) {
+                console.error("Error checking user:", err);
+            }
+        }
+
+        async function loadLeaderboard() {
+            try {
+                const response = await fetch('/api/polls'); 
+                if (response.status === 401) return;
+
+                const polls = await response.json();
+                container.innerHTML = '';
+
+                polls.forEach((poll) => {
+                    let optionsHtml = '';
+                    
+                    poll.options.forEach((opt) => {
+                        const voteCount = poll.votes && poll.votes[opt] !== undefined ? poll.votes[opt] : 0;
+                        
+                        optionsHtml += `
+                            <label class="option-label">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="radio" name="poll-${poll.id}" value="${opt}" required>
+                                    <div>${opt}</div>
+                                </div>
+                                <div style="color: var(--text-muted); font-size: 11px;">(${voteCount} ឆ្នោត)</div>
+                            </label>
+                        `;
+                    });
+
+                    container.innerHTML += `
+                        <div class="poll-item">
+                            <h4>${poll.question}</h4>
+                            <div style="margin-bottom: 10px;">
+                                ${optionsHtml}
+                            </div>
+                            <button class="vote-btn" onclick="vote('${poll.id}')">បោះឆ្នោត</button>
+                        </div>
+                    `;
+                });
+            } catch (err) {
+                console.error("Error loading polls:", err);
+            }
+        }
+
+        async function vote(pollId) {
+            try {
+                const selectedInput = document.querySelector(`input[name="poll-${pollId}"]:checked`);
+                if (!selectedInput) {
+                    alert("សូមជ្រើសរើសជម្រើសមួយ មុនពេលចុចបោះឆ្នោត!");
+                    return;
+                }
+
+                const optionText = selectedInput.value;
+                const response = await fetch('/api/polls/vote', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pollId: pollId, optionText: optionText })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert("ការបោះឆ្នោតរបស់អ្នកទទួលបានជោគជ័យ!");
+                    checkCurrentUser(); 
+                    loadLeaderboard();  
+                } else {
+                    alert(result.message);
+                }
+            } catch (err) {
+                console.error("Error voting:", err);
+            }
+        }
+
+        document.getElementById('withdraw-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const bankSelect = document.getElementById('withdraw-bank');
+            const accountInput = document.getElementById('withdraw-account');
+            const amountInput = document.getElementById('withdraw-amount');
+
+            const bankName = bankSelect.value;
+            const accountNumber = accountInput.value;
+            const amount = parseInt(amountInput.value);
+
+            try {
+                const response = await fetch('/api/withdraw', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        amount: amount,
+                        bankName: bankName,
+                        accountNumber: accountNumber
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(`ផ្ញើសំណើដកប្រាក់ចំនួន ${amount} Credit តាមរយៈ ${bankName} រួចរាល់!`);
+                    amountInput.value = ''; 
+                    accountInput.value = '';
+                    bankSelect.selectedIndex = 0;
+                    checkCurrentUser(); 
+                } else {
+                    alert(result.message);
+                }
+            } catch (err) {
+                console.error("Error withdrawing:", err);
+            }
+        });
+
+        async function logout() {
+            try {
+                const response = await fetch('/api/logout', { method: 'POST' });
+                const result = await response.json();
+                if (result.success) window.location.href = '/login.html';
+            } catch (err) {
+                console.error("Error logging out:", err);
+            }
+        }
+
+        window.onload = async function() {
+            await checkCurrentUser();
+            await loadLeaderboard();
+        };
+    </script>
+</body>
+</html>

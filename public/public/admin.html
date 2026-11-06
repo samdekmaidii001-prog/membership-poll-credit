@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - ប្រព័ន្ធគ្រប់គ្រង</title>
+    <style>
+        :root {
+            --primary-color: #4a5568;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --bg-color: #f7fafc;
+        }
+        body {
+            font-family: 'Khmer OS Battambang', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 700px;
+        }
+        .admin-header {
+            background: #2d3748;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .admin-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+        .logout-btn {
+            background: transparent;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.6);
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .card h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #333;
+            border-bottom: 2px solid #edf2f7;
+            padding-bottom: 10px;
+        }
+        .request-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        .request-info p {
+            margin: 0 0 6px 0;
+            font-size: 14px;
+            color: #4a5568;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-Pending { background: #feebc8; color: #c05621; }
+        .status-Approved { background: #c6f6d5; color: #22543d; }
+        .status-Rejected { background: #fed7d7; color: #9b2c2c; }
+        
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+        .btn {
+            border: none;
+            padding: 8px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            color: white;
+        }
+        .btn-approve { background-color: var(--success-color); }
+        .btn-approve:hover { background-color: #218838; }
+        .btn-reject { background-color: var(--danger-color); }
+        .btn-reject:hover { background-color: #c82333; }
+        
+        .no-data {
+            text-align: center;
+            color: #a0aec0;
+            padding: 20px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Admin Header -->
+        <div class="admin-header">
+            <h2>💻 ផ្ទាំងគ្រប់គ្រងរដ្ឋបាល (Admin)</h2>
+            <button class="logout-btn" onclick="logout()">ចាកចេញ</button>
+        </div>
+
+        <!-- បញ្ជីសំណើដកប្រាក់ -->
+        <div class="card">
+            <h3>📥 សំណើដកប្រាក់/Credit ទាំងអស់</h3>
+            <div id="withdraw-container">
+                <div class="no-data">កំពុងទាញយកទិន្នន័យ...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const withdrawContainer = document.getElementById('withdraw-container');
+
+        async function loadWithdrawRequests() {
+            try {
+                const response = await fetch('/api/admin/withdraws');
+                
+                if (response.status === 403 || response.status === 401) {
+                    alert("សិទ្ធិចូលប្រើប្រាស់ត្រូវបានបដិសេធ! សូម Login គណនី Admin ជាមុនសិន។");
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                const requests = await response.json();
+                withdrawContainer.innerHTML = '';
+
+                if (requests.length === 0) {
+                    withdrawContainer.innerHTML = '<div class="no-data">មិនមានសំណើដកប្រាក់នៅឡើយទេ</div>';
+                    return;
+                }
+
+                // បង្ហាញសំណើពីថ្មីទៅចាស់
+                requests.slice().reverse().forEach((req) => {
+                    let actionHtml = '';
+                    
+                    if (req.status === 'Pending') {
+                        actionHtml = `
+                            <div class="action-btns">
+                                <button class="btn btn-approve" onclick="handleAction(${req.id}, 'Approve')">អនុម័ត</button>
+                                <button class="btn btn-reject" onclick="handleAction(${req.id}, 'Reject')">បដិសេធ</button>
+                            </div>
+                        `;
+                    } else {
+                        actionHtml = `<div style="color: #a0aec0; font-weight: bold;">-</div>`;
+                    }
+
+                    // 📌 បន្ថែមការបង្ហាញឈ្មោះធនាគារ និងលេខគណនីយ៉ាងច្បាស់លាស់
+                    withdrawContainer.innerHTML += `
+                        <div class="request-item">
+                            <div class="request-info">
+                                <p><strong>អ្នកប្រើប្រាស់:</strong> ${req.username}</p>
+                                <p><strong>ចំនួនដក:</strong> <span style="color: #2b6cb0; font-weight:bold;">${req.amount} Credit</span></p>
+                                <p><strong>ធនាគារ:</strong> <span style="color: #e53e3e; font-weight:bold;">${req.bankName || 'មិនមានទិន្នន័យ'}</span></p>
+                                <p><strong>លេខគណនី:</strong> <span style="color: #319795; font-weight:bold; font-size: 15px;">${req.accountNumber || 'មិនមានទិន្នន័យ'}</span></p>
+                                <p><strong>ស្ថានភាព:</strong> <span class="badge status-${req.status}">${req.status}</span></p>
+                            </div>
+                            ${actionHtml}
+                        </div>
+                    `;
+                });
+
+            } catch (err) {
+                console.error("Error loading requests:", err);
+                withdrawContainer.innerHTML = '<div class="no-data" style="color:red;">មានបញ្ហាក្នុងការភ្ជាប់ទៅកាន់ Server!</div>';
+            }
+        }
+
+        async function handleAction(requestId, action) {
+            const confirmMsg = action === 'Approve' ? 'តើអ្នកពិតជាចង់ "អនុម័ត" សំណើនេះមែនទេ?' : 'តើអ្នកពិតជាចង់ "បដិសេធ" សំណើនេះមែនទេ?';
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                const response = await fetch('/api/admin/withdraw/action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ requestId: requestId, action: action })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert("ការចាត់ការសំណើទទួលបានជោគជ័យ!");
+                    loadWithdrawRequests(); 
+                } else {
+                    alert(result.message);
+                }
+            } catch (err) {
+                console.error("Error updating request:", err);
+                alert("មានបញ្ហាក្នុងការផ្ញើទិន្នន័យ!");
+            }
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch('/api/logout', { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    window.location.href = '/login.html';
+                }
+            } catch (err) {
+                console.error("Error logging out:", err);
+            }
+        }
+
+        window.onload = loadWithdrawRequests;
+    </script>
+</body>
+</html>
